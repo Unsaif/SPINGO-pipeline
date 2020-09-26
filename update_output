@@ -1,0 +1,59 @@
+#!/bin/bash
+
+while getopts d: options; do
+	case $options in 
+		d) dir_path=$OPTARG;;
+	esac
+done
+
+path=$(dirname "$0")
+
+if mkdir $path/workspace
+then
+:
+else
+
+echo ""
+echo "Deleting and creating new directory"
+rm -r $path/workspace
+mkdir $path/workspace
+
+fi
+
+if [ -d $dir_path ] 
+then
+:
+else
+
+echo ""
+echo "Cannot find directory"
+exit
+
+fi
+
+mv $dir_path $path/workspace
+
+out=${dir_path##*/}
+
+cd $path
+
+cp python_scripts/input_file_for_MbT_genus_function.py workspace/$out
+cp python_scripts/input_file_for_MbT_species_function.py workspace/$out
+
+cd workspace/$out
+
+python input_file_for_MbT_species_function.py
+python input_file_for_MbT_genus_function.py
+
+mv input_file_for_MbT_species_function.py ..
+mv input_file_for_MbT_genus_function.py ..
+
+cd ..
+
+mv $out ..
+
+cd ..
+
+rm -r workspace
+
+

@@ -1,0 +1,31 @@
+Firstly, before running install boost by entering in terminal:
+
+sudo apt-get update 
+sudo apt-get upgrade -y 
+sudo apt-get install libboost-all-dev
+
+sudo apt install jellyfish 
+
+pip install HTSeq
+
+Download SPINGO: https://github.com/GuyAllard/SPINGO
+
+To run the pipeline, accession codes of individuals of interest are needed. This can contained in a file of .txt, .tsv or .csv format. The idea is that the file is an exported table from a database.
+
+However, what is necessary in the file of one of these formats is that there is a column named "accession" along with the codes of individuals underneath. It should look like e.g.:
+
+accession
+SRR3199711
+SRR3199712
+SRR3199713
+....
+
+The pipeline is capable of dealing with both single-end and paired-end. It will have to be specified in the command line which one is being dealt with. 
+
+To run the pipeline using a file described above, and saving the output in the pipeline folder which will be labeled "the file's name + _output" for single-end (1) or paired-end (2):
+
+path_to_spingo_pipeline_directory/pipeline -a path_to_accession_file/accession.csv -s full_path_to_spingo_directory -o 1
+
+
+
+

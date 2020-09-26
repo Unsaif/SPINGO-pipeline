@@ -1,0 +1,276 @@
+#!/bin/bash
+
+SECONDS=0
+
+set -e
+
+while getopts a:s:o: options; do
+	case $options in 
+		a) acc=$OPTARG;;
+		s) spingo_path=$OPTARG;;
+		o) op=$OPTARG;;
+	esac
+done
+
+psp=$(dirname "$0")
+
+string="_output"
+out=${acc%.*}
+out=${out##*/} 
+concat_string=$out$string
+
+if mkdir $psp/fastq_files
+then
+:
+else
+
+echo ""
+echo "Deleting and creating new directory"
+rm -r $psp/fastq_files
+mkdir $psp/fastq_files
+
+fi
+
+if mkdir $psp/abundance_files
+then
+:
+else
+
+echo ""
+echo "Deleting and creating new directory"
+rm -r $psp/abundance_files
+mkdir $psp/abundance_files
+
+fi
+
+if [ $op -eq 1 ] || [ $op -eq 2 ]
+then
+:
+else
+
+echo ""
+echo "ERROR: -o can only take 1 or 2"
+exit
+
+fi
+
+if cp $acc $psp/fastq_files
+then
+:
+else
+
+echo ""
+echo "ERROR: Cannot find accession file"
+echo "Please check path name again"
+exit
+
+fi
+
+if [ -d $spingo_path ] 
+then
+:
+else
+
+echo ""
+echo "Cannot find SPINGO directory"
+exit
+
+fi
+
+cd $psp
+
+if [ $op -eq 1 ]
+then
+
+cp python_scripts/download_fastq_automation_single.py fastq_files
+cp python_scripts/abundances.py fastq_files
+cp python_scripts/abundances_genus.py fastq_files
+cp python_scripts/concat.py abundance_files
+cp python_scripts/concat_genus.py abundance_files
+
+cd fastq_files
+
+python download_fastq_automation_single.py
+
+duration_download=$SECONDS
+
+echo "$(($duration_download / 60)) minutes and $(($duration_download % 60)) seconds elapsed."
+echo ""
+
+dirlist=('*.fastq.gz')
+for i in $dirlist ; do
+var=${i%%.*}
+gunzip $i 
+sed '/^@/!d;s//>/;N' $var.fastq > $var.fa
+
+$spingo_path/spingo -p 3 -d $spingo_path/database/RDP_11.2.species.fa -i $var.fa > $var.txt
+
+inp=$var.txt
+
+export inp
+
+python abundances.py
+python abundances_genus.py
+
+done
+
+cd ..
+
+rm -r fastq_files
+
+cd abundance_files
+
+python concat.py
+python concat_genus.py
+
+mkdir $concat_string
+
+mv SPINGO_abundances.tsv $concat_string
+mv SPINGO_abundances_genus.tsv $concat_string
+mv total_reads.tsv $concat_string
+
+cp ../python_scripts/input_file_for_MbT_species_function.py $concat_string
+cp ../python_scripts/input_file_for_MbT_genus_function.py $concat_string
+
+cd $concat_string
+
+python input_file_for_MbT_species_function.py
+python input_file_for_MbT_genus_function.py
+
+mv input_file_for_MbT_species_function.py ..
+mv input_file_for_MbT_genus_function.py ..
+
+cd ..
+
+if mv $concat_string ..
+then
+:
+else
+
+echo ""
+echo "Deleting old directory and replacing with new directory"
+rm -r ../$concat_string
+mv $concat_string ..
+
+fi
+
+cd ..
+
+rm -r abundance_files
+
+fi
+
+if [ $op -eq 2 ]
+then
+
+one=_1
+two=_2
+
+cp python_scripts/download_fastq_automation_double.py fastq_files
+cp python_scripts/abundances.py fastq_files
+cp python_scripts/abundances_genus.py fastq_files
+cp python_scripts/concat.py abundance_files
+cp python_scripts/concat_genus.py abundance_files
+cp -r casper_v0.8.2 fastq_files
+
+cd fastq_files
+
+python download_fastq_automation_double.py
+
+duration_download=$SECONDS
+
+echo "$(($duration_download / 60)) minutes and $(($duration_download % 60)) seconds elapsed."
+echo ""
+
+dirlist=('*.fastq.gz')
+for i in $dirlist ; do
+var=${i%%.*}
+gunzip $i 
+
+mv $var.fastq casper_v0.8.2
+
+done
+
+cd casper_v0.8.2
+
+dirlist=('*_1.fastq')
+
+for i in $dirlist; do
+var=${i%%_1.*}
+
+~/$psp/fastq_files/casper_v0.8.2/mefit -s $var -r1 $var$one.fastq -r2 $var$two.fastq -avgq 20
+
+mv $var.ovlp.hq.fastq ..
+
+done
+
+cd ..
+
+dirlist=('*.fastq')
+for i in $dirlist ; do
+var=${i%%.*}
+sed '/^@/!d;s//>/;N' $var.ovlp.hq.fastq > $var.fa
+
+$spingo_path/spingo -p 3 -d $spingo_path/database/RDP_11.2.species.fa -i $var.fa > $var.txt
+
+inp=$var.txt
+
+export inp
+
+python abundances.py
+python abundances_genus.py
+
+done
+
+cd ..
+
+rm -r fastq_files
+
+cd abundance_files
+
+python concat.py
+python concat_genus.py
+
+mkdir $concat_string
+
+mv SPINGO_abundances.tsv $concat_string
+mv SPINGO_abundances_genus.tsv $concat_string
+mv total_reads.tsv $concat_string
+
+cp ../python_scripts/input_file_for_MbT_species_function.py $concat_string
+cp ../python_scripts/input_file_for_MbT_genus_function.py $concat_string
+
+cd $concat_string
+
+python input_file_for_MbT_species_function.py
+python input_file_for_MbT_genus_function.py
+
+mv input_file_for_MbT_species_function.py ..
+mv input_file_for_MbT_genus_function.py ..
+
+cd ..
+
+if mv $concat_string ..
+then
+:
+else
+
+echo ""
+echo "Deleting old directory and replacing with new directory"
+rm -r ../$concat_string
+mv $concat_string ..
+
+fi
+
+cd ..
+
+rm -r abundance_files
+
+fi
+
+duration=$SECONDS
+
+echo ""
+echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
+
+
