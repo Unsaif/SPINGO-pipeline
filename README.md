@@ -49,7 +49,7 @@ The pipeline is capable of dealing with both single-end and paired-end. It will 
 
 To run the pipeline using a file described above, and saving the output in the pipeline directory which will be labeled "the file's name + _output" for single-end (1) or paired-end (2):
 
-`ppath_to_spingo_pipeline_directory/pipeline -a path_to_accession_file/accession.csv -s full_path_to_spingo_directory -o 1`
+`SPINGOPIPELINEDIR/pipeline -a path_to_accession_file/accession.csv -s full_path_to_spingo_directory -o 1`
 
 If running from within the pipeline directory:
 
